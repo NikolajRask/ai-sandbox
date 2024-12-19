@@ -1,4 +1,4 @@
-import React, { CSSProperties,  useRef, useState } from 'react'
+import React, { CSSProperties,  useEffect,  useRef, useState } from 'react'
 import styles from './sandbox.module.scss'
 import { classNames, processUnit } from '@/packages/shared/helpers/css'
 
@@ -42,17 +42,28 @@ interface SandboxProps {
 }
 
 
-const Sandbox = ({
+interface Item {
+    id: number;
+    x: number;
+    y: number;
+    content: React.ReactNode
+  }
+  
+  export const Sandbox = ({
     children,
     dimensions,
     className,
     style,
-}: SandboxProps) => {
-
+    grid = false,
+  }: SandboxProps) => {
     const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
+    const [items, setItems] = useState<Item[]>([]);
+    const [zoom, setZoom] = useState(1); // Zoom state to track the zoom level
     const dragging = useRef<boolean>(false);
     const lastPosition = useRef<Position>({ x: 0, y: 0 });
+    const itemIdCounter = useRef<number>(1); // to uniquely identify items
   
+    // Mouse and touch event handlers
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
       dragging.current = true;
       lastPosition.current = { x: e.clientX, y: e.clientY };
@@ -100,34 +111,84 @@ const Sandbox = ({
         y: e.touches[0].clientY,
       };
     };
+
+    const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9; // Zoom in or out based on scroll direction
+    
+        setZoom((prevZoom) => {
+          const newZoom = Math.min(Math.max(prevZoom * zoomFactor, 0.5), 3); // Limiting zoom range
+          return newZoom;
+        });
+      };
   
     const handleTouchEnd = () => {
       dragging.current = false;
     };
+  
+    // Function to add a new item
+    const addItem = (x: number, y: number, content: React.ReactNode) => {
+      setItems((prev) => [
+        ...prev,
+        { id: itemIdCounter.current++, x: x, y: y, content: content },
+      ]);
+    };
 
+    useEffect(() => {
+        addItem(400, 400, <p>Hello World</p>)
+        addItem(800, 800, <p>Hello World</p>)
+    }, [])
+  
     return (
-        <div 
-            className={classNames(styles.sandbox, className ?? "")}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+      <div
+        className={classNames(styles.sandbox, className ?? "")}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onWheel={handleWheel} // Mouse wheel event listener for zooming
+        style={{
+          backgroundPosition: `${position.x}px ${position.y}px`, // Updated dynamically
+          width: processUnit(dimensions?.width ?? "100vw"),
+          height: processUnit(dimensions?.height ?? "100vh"),
+          ...style,
+        }}
+      >
+        <div
+            className={styles.sandboxContent}
             style={{
-                backgroundPosition: `${position.x}px ${position.y}px`, // Updated dynamically
-                width: processUnit(dimensions?.width ?? "100vw"),
-                height: processUnit(dimensions?.height ?? "100vh"),
-                ...style
+                // transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, // Apply zoom and panning
+                // transformOrigin: 'center', // Keep the zoom centered
+                width: '100%',
+                height: '100%',
             }}
         >
             {children}
-            <div className={styles.sandboxInfo}>
-                <p>{position.x}, {position.y}</p>
-            </div>
+            {items.map((item, index) => (
+                <div 
+                    key={index}
+                    style={{
+                        position: "absolute",
+                        left: `${item.x + position.x}px`, // Position relative to sandbox offset
+                        top: `${item.y + position.y}px`,
+                        // transform: `scale(${zoom})`, // Apply zoom to each item
+                        // display: 'flex',
+                        // alignItems: 'center',
+                        // justifyContent: 'center',
+                        // transformOrigin: 'center',
+                    }}
+                >
+                    {item.content}
+                </div>
+            ))}
         </div>
-    )
-}
-
-export default Sandbox
+        <div className={styles.sandboxInfo}>
+          <p>{-position.x}, {-position.y}</p>
+        </div>
+      </div>
+    );
+  };
+  
