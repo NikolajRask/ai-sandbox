@@ -1,0 +1,30 @@
+.sandboxItem {
+    background: white;
+    border: 1px solid rgb(150, 150, 150);
+    border-radius: 10px;
+    padding: 15px;
+
+    .sandboxItemTitleContainer {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+
+        .sandboxItemIcon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(19,8,205,1) 0%, rgba(255,0,254,1) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .sandboxItemTitle {
+            font-size: 17px;
+            margin: 0px;
+            padding: 0px;
+            font-weight: 600;
+        }
+    }
+}

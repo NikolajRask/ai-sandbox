@@ -1,6 +1,7 @@
 import React, { CSSProperties,  useEffect,  useRef, useState } from 'react'
 import styles from './sandbox.module.scss'
 import { classNames, processUnit } from '@/packages/shared/helpers/css'
+import SandboxInput from '../SandboxInput/SandboxInput';
 
 interface Position {
     x: number;
@@ -54,11 +55,11 @@ interface Item {
     dimensions,
     className,
     style,
-    grid = false,
+    // grid = false,
   }: SandboxProps) => {
     const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
     const [items, setItems] = useState<Item[]>([]);
-    const [zoom, setZoom] = useState(1); // Zoom state to track the zoom level
+    // const [zoom, setZoom] = useState(1); // Zoom state to track the zoom level
     const dragging = useRef<boolean>(false);
     const lastPosition = useRef<Position>({ x: 0, y: 0 });
     const itemIdCounter = useRef<number>(1); // to uniquely identify items
@@ -112,15 +113,15 @@ interface Item {
       };
     };
 
-    const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9; // Zoom in or out based on scroll direction
+    // const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    //     e.preventDefault();
+    //     const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9; // Zoom in or out based on scroll direction
     
-        setZoom((prevZoom) => {
-          const newZoom = Math.min(Math.max(prevZoom * zoomFactor, 0.5), 3); // Limiting zoom range
-          return newZoom;
-        });
-      };
+    //     setZoom((prevZoom) => {
+    //       const newZoom = Math.min(Math.max(prevZoom * zoomFactor, 0.5), 3); // Limiting zoom range
+    //       return newZoom;
+    //     });
+    // };
   
     const handleTouchEnd = () => {
       dragging.current = false;
@@ -135,8 +136,7 @@ interface Item {
     };
 
     useEffect(() => {
-        addItem(400, 400, <p>Hello World</p>)
-        addItem(800, 800, <p>Hello World</p>)
+        addItem(400, 400, <SandboxInput/>)
     }, [])
   
     return (
@@ -149,7 +149,7 @@ interface Item {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        onWheel={handleWheel} // Mouse wheel event listener for zooming
+        // onWheel={handleWheel} // Mouse wheel event listener for zooming
         style={{
           backgroundPosition: `${position.x}px ${position.y}px`, // Updated dynamically
           width: processUnit(dimensions?.width ?? "100vw"),
