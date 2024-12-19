@@ -1,0 +1,24 @@
+.sandbox {
+    width: 100vw;
+    height: 100vh;
+    background-image: 
+      linear-gradient(to right, #ccc 1px, transparent 1px),
+      linear-gradient(to bottom, #ccc 1px, transparent 1px);
+    background-size: 100px 100px; // Size of grid cells
+    cursor: grab; // Change the cursor to indicate dragging
+    overflow: hidden; // Prevent content overflow
+
+    &:hover {
+        cursor: grab;
+    }
+
+    &:active {
+        cursor: grabbing;
+    }
+
+    .sandboxInfo {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+    }
+}
