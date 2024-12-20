@@ -234,19 +234,30 @@ interface Item {
 
             if (!fromItem || !toItem) return null;
 
+            // Calculate control points for the Bezier curve
+            const startX = fromItem.x + 25; // Center of the "from" item
+            const startY = fromItem.y + 25;
+            const endX = toItem.x + 25; // Center of the "to" item
+            const endY = toItem.y + 25;
+
+            // Control points for the curve
+            const controlX1 = startX + (endX - startX) / 2;
+            const controlY1 = startY;
+            const controlX2 = startX + (endX - startX) / 2;
+            const controlY2 = endY;
+
             return (
-              <line
+              <path
                 key={index}
-                x1={fromItem.x + 25} // Center of the item (assuming 50px width/height)
-                y1={fromItem.y + 25}
-                x2={toItem.x + 25}
-                y2={toItem.y + 25}
+                d={`M ${startX},${startY} C ${controlX1},${controlY1} ${controlX2},${controlY2} ${endX},${endY}`}
                 stroke={getLineColor(line.type)}
                 strokeWidth="2"
+                fill="none"
               />
             );
           })}
         </svg>
+
         
         <div
             className={styles.sandboxContent}
