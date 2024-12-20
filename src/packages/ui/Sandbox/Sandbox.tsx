@@ -2,6 +2,7 @@ import React, { CSSProperties,  useEffect,  useRef, useState } from 'react'
 import styles from './sandbox.module.scss'
 import { classNames, processUnit } from '@/packages/shared/helpers/css'
 import SandboxInput from '../SandboxInput/SandboxInput';
+import LLMCompletion from '../custom/Sandbox/LLMCompletion/LLMCompletion';
 
 interface Position {
     x: number;
@@ -59,29 +60,56 @@ interface Item {
   }: SandboxProps) => {
     const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
     const [items, setItems] = useState<Item[]>([]);
+    const itemBeingDragged = useRef<number | null>(null); // Track which item is being dragged
+    const [draggingItem, setDraggingItem] = useState<boolean>(false);
     // const [zoom, setZoom] = useState(1); // Zoom state to track the zoom level
     const dragging = useRef<boolean>(false);
     const lastPosition = useRef<Position>({ x: 0, y: 0 });
     const itemIdCounter = useRef<number>(1); // to uniquely identify items
+    const sandboxRef = useRef<HTMLDivElement>(null);
   
     // Mouse and touch event handlers
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.target !== sandboxRef.current) return;
       dragging.current = true;
       lastPosition.current = { x: e.clientX, y: e.clientY };
     };
   
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!dragging.current) return;
+      if (dragging.current) {
+        const deltaX = e.clientX - lastPosition.current.x;
+        const deltaY = e.clientY - lastPosition.current.y;
+    
+        setPosition((prev) => ({
+          x: prev.x + deltaX,
+          y: prev.y + deltaY,
+        }));
   
-      const deltaX = e.clientX - lastPosition.current.x;
-      const deltaY = e.clientY - lastPosition.current.y;
-  
-      setPosition((prev) => ({
-        x: prev.x + deltaX,
-        y: prev.y + deltaY,
-      }));
-  
-      lastPosition.current = { x: e.clientX, y: e.clientY };
+        setItems((prevItems) =>
+          prevItems.map((item) =>
+            item.id === itemBeingDragged.current
+              ? { ...item, x: item.x + deltaX, y: item.y + deltaY }
+              : item
+          )
+        );
+    
+        lastPosition.current = { x: e.clientX, y: e.clientY };
+      } else {
+        if (draggingItem) {
+          const deltaX = e.clientX - lastPosition.current.x;
+          const deltaY = e.clientY - lastPosition.current.y;
+      
+          setItems((prevItems) =>
+            prevItems.map((item) =>
+              item.id === itemBeingDragged.current
+                ? { ...item, x: item.x + deltaX, y: item.y + deltaY }
+                : item
+            )
+          );
+      
+          lastPosition.current = { x: e.clientX, y: e.clientY };
+        }
+      }
     };
   
     const handleMouseUp = () => {
@@ -126,6 +154,25 @@ interface Item {
     const handleTouchEnd = () => {
       dragging.current = false;
     };
+
+    const handleItemMouseDown = (
+      e: React.MouseEvent<HTMLDivElement>,
+      itemId: number
+    ) => {
+      e.stopPropagation(); // Prevent dragging the whole sandbox
+      setDraggingItem(true);
+      itemBeingDragged.current = itemId;
+      lastPosition.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handleItemMouseUp = () => {
+
+      if (draggingItem) {
+        setDraggingItem(false);
+        itemBeingDragged.current = null;
+        return
+      }
+    };
   
     // Function to add a new item
     const addItem = (x: number, y: number, content: React.ReactNode) => {
@@ -137,6 +184,7 @@ interface Item {
 
     useEffect(() => {
         addItem(400, 400, <SandboxInput/>)
+        addItem(800, 400, <LLMCompletion/>)
     }, [])
   
     return (
@@ -159,6 +207,7 @@ interface Item {
       >
         <div
             className={styles.sandboxContent}
+            ref={sandboxRef}
             style={{
                 // transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, // Apply zoom and panning
                 // transformOrigin: 'center', // Keep the zoom centered
@@ -166,10 +215,11 @@ interface Item {
                 height: '100%',
             }}
         >
-            {children}
             {items.map((item, index) => (
                 <div 
                     key={index}
+                    onMouseDown={(e) => handleItemMouseDown(e, item.id)} // Handle dragging for the item
+                    onMouseUp={() => handleItemMouseUp()} // Handle dragging for the item
                     style={{
                         position: "absolute",
                         left: `${item.x + position.x}px`, // Position relative to sandbox offset
@@ -188,6 +238,7 @@ interface Item {
         <div className={styles.sandboxInfo}>
           <p>{-position.x}, {-position.y}</p>
         </div>
+        {children}
       </div>
     );
   };

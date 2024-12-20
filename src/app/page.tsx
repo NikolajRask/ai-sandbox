@@ -1,5 +1,6 @@
 "use client"
 
+import Pallete from "@/packages/ui/custom/Pallete/Pallete";
 import { Sandbox } from "@/packages/ui/Sandbox/Sandbox";
 
 export default function Home() {
@@ -8,7 +9,9 @@ export default function Home() {
       {/* <Sandbox
 
       /> */}
-      <Sandbox/>
+      <Sandbox>
+        <Pallete/>
+      </Sandbox>
     </div>
   );
 }
