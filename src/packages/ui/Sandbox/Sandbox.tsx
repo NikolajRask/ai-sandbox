@@ -3,6 +3,7 @@ import styles from './sandbox.module.scss'
 import { classNames, processUnit } from '@/packages/shared/helpers/css'
 import SandboxInput from '../SandboxInput/SandboxInput';
 import LLMCompletion from '../custom/Sandbox/LLMCompletion/LLMCompletion';
+import { getLineColor } from '@/packages/shared/sandbox/utils';
 
 interface Position {
     x: number;
@@ -43,6 +44,12 @@ interface SandboxProps {
 
 }
 
+interface Line {
+  from: number; // ID of the starting item
+  to: number; // ID of the ending item
+  type: "tool" | "data" | "control" | "other";
+}
+
 
 interface Item {
     id: number;
@@ -60,6 +67,7 @@ interface Item {
   }: SandboxProps) => {
     const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
     const [items, setItems] = useState<Item[]>([]);
+    const [lines, setLines] = useState<Line[]>([]); // Track lines between items
     const itemBeingDragged = useRef<number | null>(null); // Track which item is being dragged
     const [draggingItem, setDraggingItem] = useState<boolean>(false);
     // const [zoom, setZoom] = useState(1); // Zoom state to track the zoom level
@@ -176,15 +184,25 @@ interface Item {
   
     // Function to add a new item
     const addItem = (x: number, y: number, content: React.ReactNode) => {
+      const id = itemIdCounter.current++
       setItems((prev) => [
         ...prev,
-        { id: itemIdCounter.current++, x: x, y: y, content: content },
+        { id: id, x: x, y: y, content: content },
       ]);
+
+      return { id: id, x: x, y: y, content: content }
     };
 
+    const addLine = (from: number, to: number, type?: "tool" | "data" | "control" | "other") => {
+      setLines((prev) => [...prev, { from, to, type: type ?? "other" }]);
+    };
+
+    const getItemById = (id: number) => items.find((item) => item.id === id);
+
     useEffect(() => {
-        addItem(400, 400, <SandboxInput/>)
-        addItem(800, 400, <LLMCompletion/>)
+        const item1 = addItem(400, 400, <SandboxInput/>)
+        const item2 = addItem(800, 400, <LLMCompletion/>)
+        addLine(item1.id, item2.id, "tool");
     }, [])
   
     return (
@@ -205,6 +223,31 @@ interface Item {
           ...style,
         }}
       >
+
+        <svg
+          className={styles.sandboxLines}
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+        >
+          {lines.map((line, index) => {
+            const fromItem = getItemById(line.from);
+            const toItem = getItemById(line.to);
+
+            if (!fromItem || !toItem) return null;
+
+            return (
+              <line
+                key={index}
+                x1={fromItem.x + 25} // Center of the item (assuming 50px width/height)
+                y1={fromItem.y + 25}
+                x2={toItem.x + 25}
+                y2={toItem.y + 25}
+                stroke={getLineColor(line.type)}
+                strokeWidth="2"
+              />
+            );
+          })}
+        </svg>
+        
         <div
             className={styles.sandboxContent}
             ref={sandboxRef}
@@ -234,9 +277,6 @@ interface Item {
                     {item.content}
                 </div>
             ))}
-        </div>
-        <div className={styles.sandboxInfo}>
-          <p>{-position.x}, {-position.y}</p>
         </div>
         {children}
       </div>
