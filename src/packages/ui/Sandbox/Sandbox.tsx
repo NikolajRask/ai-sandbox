@@ -1,9 +1,9 @@
-import React, { CSSProperties,  useEffect,  useRef, useState } from 'react'
+import React, { CSSProperties, useRef, useState } from 'react'
 import styles from './sandbox.module.scss'
 import { classNames, processUnit } from '@/packages/shared/helpers/css'
-import SandboxInput from '../SandboxInput/SandboxInput';
-import LLMCompletion from '../custom/Sandbox/LLMCompletion/LLMCompletion';
 import { getLineColor } from '@/packages/shared/sandbox/utils';
+import { SandboxProvider } from './sandbox.context';
+import SandboxItem, { SandboxItemDragger } from '../SandboxItem/SandboxItem';
 
 interface Position {
     x: number;
@@ -55,7 +55,8 @@ interface Item {
     id: number;
     x: number;
     y: number;
-    content: React.ReactNode
+    content: React.ReactNode;
+    title: string;
   }
   
   export const Sandbox = ({
@@ -148,16 +149,6 @@ interface Item {
         y: e.touches[0].clientY,
       };
     };
-
-    // const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    //     e.preventDefault();
-    //     const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9; // Zoom in or out based on scroll direction
-    
-    //     setZoom((prevZoom) => {
-    //       const newZoom = Math.min(Math.max(prevZoom * zoomFactor, 0.5), 3); // Limiting zoom range
-    //       return newZoom;
-    //     });
-    // };
   
     const handleTouchEnd = () => {
       dragging.current = false;
@@ -183,11 +174,11 @@ interface Item {
     };
   
     // Function to add a new item
-    const addItem = (x: number, y: number, content: React.ReactNode) => {
+    const addItem = (content: React.ReactNode, title: string, x?: number, y?: number) => {
       const id = itemIdCounter.current++
       setItems((prev) => [
         ...prev,
-        { id: id, x: x, y: y, content: content },
+        { id: id, x: x ?? -position.x, y: y ?? -position.y, content: content, title: title },
       ]);
 
       return { id: id, x: x, y: y, content: content }
@@ -198,99 +189,98 @@ interface Item {
     };
 
     const getItemById = (id: number) => items.find((item) => item.id === id);
-
-    useEffect(() => {
-        const item1 = addItem(400, 400, <SandboxInput/>)
-        const item2 = addItem(800, 400, <LLMCompletion/>)
-        addLine(item1.id, item2.id, "tool");
-    }, [])
   
     return (
-      <div
-        className={classNames(styles.sandbox, className ?? "")}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        // onWheel={handleWheel} // Mouse wheel event listener for zooming
-        style={{
-          backgroundPosition: `${position.x}px ${position.y}px`, // Updated dynamically
-          width: processUnit(dimensions?.width ?? "100vw"),
-          height: processUnit(dimensions?.height ?? "100vh"),
-          ...style,
-        }}
-      >
-
-        <svg
-          className={styles.sandboxLines}
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-        >
-          {lines.map((line, index) => {
-            const fromItem = getItemById(line.from);
-            const toItem = getItemById(line.to);
-
-            if (!fromItem || !toItem) return null;
-
-            // Calculate control points for the Bezier curve
-            const startX = fromItem.x + 25; // Center of the "from" item
-            const startY = fromItem.y + 25;
-            const endX = toItem.x + 25; // Center of the "to" item
-            const endY = toItem.y + 25;
-
-            // Control points for the curve
-            const controlX1 = startX + (endX - startX) / 2;
-            const controlY1 = startY;
-            const controlX2 = startX + (endX - startX) / 2;
-            const controlY2 = endY;
-
-            return (
-              <path
-                key={index}
-                d={`M ${startX},${startY} C ${controlX1},${controlY1} ${controlX2},${controlY2} ${endX},${endY}`}
-                stroke={getLineColor(line.type)}
-                strokeWidth="2"
-                fill="none"
-              />
-            );
-          })}
-        </svg>
-
-        
+      <SandboxProvider value={{ addLine, addItem }}>
         <div
-            className={styles.sandboxContent}
-            ref={sandboxRef}
-            style={{
-                // transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, // Apply zoom and panning
-                // transformOrigin: 'center', // Keep the zoom centered
-                width: '100%',
-                height: '100%',
-            }}
+          className={classNames(styles.sandbox, className ?? "")}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          // onWheel={handleWheel} // Mouse wheel event listener for zooming
+          style={{
+            backgroundPosition: `${position.x}px ${position.y}px`, // Updated dynamically
+            width: processUnit(dimensions?.width ?? "100vw"),
+            height: processUnit(dimensions?.height ?? "100vh"),
+            ...style,
+          }}
         >
-            {items.map((item, index) => (
-                <div 
-                    key={index}
-                    onMouseDown={(e) => handleItemMouseDown(e, item.id)} // Handle dragging for the item
-                    onMouseUp={() => handleItemMouseUp()} // Handle dragging for the item
-                    style={{
-                        position: "absolute",
-                        left: `${item.x + position.x}px`, // Position relative to sandbox offset
-                        top: `${item.y + position.y}px`,
-                        // transform: `scale(${zoom})`, // Apply zoom to each item
-                        // display: 'flex',
-                        // alignItems: 'center',
-                        // justifyContent: 'center',
-                        // transformOrigin: 'center',
-                    }}
-                >
-                    {item.content}
-                </div>
-            ))}
+
+          <svg
+            className={styles.sandboxLines}
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+          >
+            {lines.map((line, index) => {
+              const fromItem = getItemById(line.from);
+              const toItem = getItemById(line.to);
+
+              if (!fromItem || !toItem) return null;
+
+              // Calculate positions adjusted for sandbox panning
+              const startX = fromItem.x + 25 + position.x; // Adjust for sandbox offset
+              const startY = fromItem.y + 25 + position.y;
+              const endX = toItem.x + 25 + position.x; // Adjust for sandbox offset
+              const endY = toItem.y + 25 + position.y;
+
+              // Control points for the curve
+              const controlX1 = startX + (endX - startX) / 2;
+              const controlY1 = startY;
+              const controlX2 = startX + (endX - startX) / 2;
+              const controlY2 = endY;
+
+              return (
+                <path
+                  key={index}
+                  d={`M ${startX},${startY} C ${controlX1},${controlY1} ${controlX2},${controlY2} ${endX},${endY}`}
+                  stroke={getLineColor(line.type)}
+                  strokeWidth="2"
+                  fill="none"
+                />
+              );
+            })}
+          </svg>
+
+          <div
+              className={styles.sandboxContent}
+              ref={sandboxRef}
+              style={{
+                  // transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, // Apply zoom and panning
+                  // transformOrigin: 'center', // Keep the zoom centered
+                  width: '100%',
+                  height: '100%',
+              }}
+          >
+              {items.map((item, index) => (
+                  <div 
+                      key={index}
+                      style={{
+                          position: "absolute",
+                          left: `${item.x + position.x}px`, // Position relative to sandbox offset
+                          top: `${item.y + position.y}px`,
+                          // transform: `scale(${zoom})`, // Apply zoom to each item
+                          // display: 'flex',
+                          // alignItems: 'center',
+                          // justifyContent: 'center',
+                          // transformOrigin: 'center',
+                      }}
+                  >
+                      <SandboxItem title={item.title} key={item.id}>
+                        {item.content}
+                        <SandboxItemDragger
+                          onMouseDown={(e) => handleItemMouseDown(e, item.id)} // Handle dragging for the item
+                          onMouseUp={() => handleItemMouseUp()} // Handle dragging for the item
+                        />
+                      </SandboxItem>
+                  </div>
+              ))}
+          </div>
+          {children}
         </div>
-        {children}
-      </div>
+      </SandboxProvider>
     );
   };
   

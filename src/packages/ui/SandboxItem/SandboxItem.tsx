@@ -25,3 +25,11 @@ const SandboxItem = ({
 }
 
 export default SandboxItem
+
+export const SandboxItemDragger = ({
+    ...rest
+}: React.ButtonHTMLAttributes<HTMLDivElement>) => {
+    return <div {...rest} className={styles.sandboxItemDragger}>
+        
+    </div>
+}

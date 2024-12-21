@@ -1,17 +1,17 @@
 import { Input } from '@/components/ui/input'
-import SandboxItem from '@/packages/ui/SandboxItem/SandboxItem'
 import SandboxSelect from '@/packages/ui/SandboxSelect/SandboxSelect'
 import React from 'react'
-import styles from './llmcompletion.module.scss'
+import SandboxLabel from '@/packages/ui/SandboxDefaults/SandboxLabel/Label'
+import SandboxItemContent from '@/packages/ui/SandboxDefaults/SandboxItemContent/SandboxItemContent'
 
 const LLMCompletion = () => {
   return (
-    <SandboxItem title='LLM Chat Completion'>
-        <p className={styles.label}>LLM Instructions</p>
-        <Input placeholder='You are a helpfull assistant'/>
-        <p className={styles.label}>Model</p>
-        <SandboxSelect/>
-    </SandboxItem>
+    <SandboxItemContent>
+      <SandboxLabel>LLM Instructions</SandboxLabel>
+      <Input placeholder='You are a helpfull assistant'/>
+      <SandboxLabel>Model</SandboxLabel>
+      <SandboxSelect/>
+    </SandboxItemContent>
   )
 }
 
